@@ -10,5 +10,5 @@
 #import "CCScrollableHeaderTabViewController.h"
 
 @interface TestViewController : CCScrollableHeaderTabViewController
-
+@property (assign, nonatomic) NSInteger index;
 @end

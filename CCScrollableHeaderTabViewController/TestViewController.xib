@@ -29,7 +29,7 @@
                             <rect key="frame" x="0.0" y="0.0" width="320" height="218"/>
                         </imageView>
                     </subviews>
-                    <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                    <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                     <constraints>
                         <constraint firstAttribute="bottom" secondItem="Xit-mp-5XZ" secondAttribute="bottom" id="8AV-Um-de6"/>
                         <constraint firstAttribute="height" constant="218" id="OTH-Qi-HFs"/>
@@ -41,19 +41,32 @@
                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="L11-dX-mLq">
                     <rect key="frame" x="0.0" y="218" width="320" height="44"/>
                     <subviews>
+                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="9pd-AB-9FQ">
+                            <rect key="frame" x="0.0" y="0.0" width="50" height="44"/>
+                            <state key="normal" title="back">
+                                <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                            </state>
+                            <connections>
+                                <action selector="back:" destination="-1" eventType="touchUpInside" id="Wlp-Ke-oWv"/>
+                            </connections>
+                        </button>
                         <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="s1H-eF-zFf" customClass="CCSimpleTabView">
                             <rect key="frame" x="50" y="0.0" width="220" height="44"/>
-                            <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
+                            <color key="backgroundColor" red="1" green="1" blue="0.016164679276315791" alpha="1" colorSpace="calibratedRGB"/>
                             <constraints>
                                 <constraint firstAttribute="width" constant="220" id="mSw-aY-fEg"/>
                             </constraints>
                         </view>
                     </subviews>
-                    <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                    <color key="backgroundColor" red="1" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="44" id="4lV-Tw-Ajm"/>
                         <constraint firstItem="s1H-eF-zFf" firstAttribute="top" secondItem="L11-dX-mLq" secondAttribute="top" id="DxV-Ot-fxf"/>
+                        <constraint firstAttribute="bottom" secondItem="9pd-AB-9FQ" secondAttribute="bottom" id="M2J-cx-s2P"/>
+                        <constraint firstItem="s1H-eF-zFf" firstAttribute="leading" secondItem="9pd-AB-9FQ" secondAttribute="trailing" id="RGS-cY-jfk"/>
                         <constraint firstAttribute="bottom" secondItem="s1H-eF-zFf" secondAttribute="bottom" id="SeK-jQ-RaF"/>
+                        <constraint firstItem="9pd-AB-9FQ" firstAttribute="top" secondItem="L11-dX-mLq" secondAttribute="top" id="Yfw-cu-PyO"/>
+                        <constraint firstItem="9pd-AB-9FQ" firstAttribute="leading" secondItem="L11-dX-mLq" secondAttribute="leading" id="d9e-nE-vQP"/>
                         <constraint firstAttribute="centerX" secondItem="s1H-eF-zFf" secondAttribute="centerX" id="n7d-MV-dDC"/>
                     </constraints>
                 </view>

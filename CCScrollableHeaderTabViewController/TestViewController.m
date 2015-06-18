@@ -22,7 +22,12 @@
         self.edgesForExtendedLayout = UIRectEdgeNone;
     }
    
-    self.minHeightOfHeaderView = 0;
+    if (self.index == 0) {
+        self.minHeightOfHeaderView = 0;
+    }
+    else {
+        [self.navigationController setNavigationBarHidden:YES];
+    }
     [self configTabView];
     
     EmbedViewController *evc = [EmbedViewController new];
@@ -37,25 +42,29 @@
     // Dispose of any resources that can be recreated.
 }
 
+- (IBAction)back:(id)sender {
+    [self.navigationController popViewControllerAnimated:YES];
+}
+
 - (void)configTabView {
     //tabmenu
     CCSimpleTabItem *infoItem = [[CCSimpleTabItem alloc] initWithTitle:@"tab1"
                                                                    color:RGB(96, 96, 96)
                                                         highlightedColor:[UIColor greenColor]];
     infoItem.defaultBackgroundColor = [UIColor clearColor];
-    infoItem.selectedBackgroundColor = [UIColor clearColor];
+    infoItem.selectedBackgroundColor = [UIColor blueColor];
     CCSimpleTabItem *cataItem = [[CCSimpleTabItem alloc] initWithTitle:@"tab2"
                                                                    color:RGB(96, 96, 96)
                                                         highlightedColor:[UIColor greenColor]];
     cataItem.defaultBackgroundColor = [UIColor clearColor];
-    cataItem.selectedBackgroundColor = [UIColor clearColor];
+    cataItem.selectedBackgroundColor = [UIColor purpleColor];
     CCSimpleTabItem *commentItem = [[CCSimpleTabItem alloc] initWithTitle:@"tab3"
                                                                       color:RGB(96, 96, 96)
                                                            highlightedColor:[UIColor greenColor]];
     commentItem.defaultBackgroundColor = [UIColor clearColor];
-    commentItem.selectedBackgroundColor = [UIColor clearColor];
+    commentItem.selectedBackgroundColor = [UIColor grayColor];
     [self.tabView setTabItems:@[infoItem, cataItem, commentItem]];
-    self.tabView.backgroundColor = [UIColor clearColor];
+    self.tabView.backgroundColor = [UIColor yellowColor];
     [self.tabView setIndicatorImage:[UIImage imageNamed:@"line"]];
 }
 @end
