@@ -1,5 +1,5 @@
 //
-//  ViewController.h
+//  EmbedViewController.h
 //  CCScrollableHeaderTabViewController
 //
 //  Created by ddrccw on 15/6/18.
@@ -8,8 +8,6 @@
 
 #import <UIKit/UIKit.h>
 
-@interface ViewController : UIViewController
-
+@interface EmbedViewController : UIViewController
 
 @end
-

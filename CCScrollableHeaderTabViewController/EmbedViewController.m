@@ -1,25 +1,24 @@
 //
-//  ViewController.m
+//  EmbedViewController.m
 //  CCScrollableHeaderTabViewController
 //
 //  Created by ddrccw on 15/6/18.
 //  Copyright (c) 2015年 ddrccw. All rights reserved.
 //
 
-#import "ViewController.h"
-#import "TestViewController.h"
+#import "EmbedViewController.h"
 
-@interface ViewController ()
-<UITableViewDataSource, UITableViewDelegate>
+@interface EmbedViewController ()
+<UITableViewDelegate, UITableViewDataSource, CCScrollableHeaderTabViewControllerViewSource>
 @property (weak, nonatomic) IBOutlet UITableView *tableView;
+
 @end
 
-@implementation ViewController
+@implementation EmbedViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.tableView.dataSource = self;
-    self.tableView.delegate = self;
 }
 
 - (void)didReceiveMemoryWarning {
@@ -27,9 +26,13 @@
     // Dispose of any resources that can be recreated.
 }
 
+- (UIScrollView *)scrollableSubViewInSubViewController:(id)subViewController {
+    return self.tableView;
+}
+
 #pragma mark - table view data souce and delegate
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return 1;
+    return arc4random() % 50 + 5;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -39,11 +42,7 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:kCellId];
     }
     
-    cell.textLabel.text = @"default";
+    cell.textLabel.text = [NSString stringWithFormat:@"hello %d", indexPath.row];
     return cell;
-}
-
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    [self.navigationController pushViewController:[TestViewController new] animated:YES];
 }
 @end

@@ -18,6 +18,10 @@
 		2A11FD0B1B32BFAF00347FC8 /* NSString+Utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A11FD0A1B32BFAF00347FC8 /* NSString+Utility.m */; };
 		2A11FD0E1B32C48800347FC8 /* UIView+AutoLayoutPlus.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A11FD0D1B32C48800347FC8 /* UIView+AutoLayoutPlus.m */; };
 		2A11FD101B32C6A300347FC8 /* ViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2A11FD0F1B32C6A300347FC8 /* ViewController.xib */; };
+		2A11FD141B32C8ED00347FC8 /* TestViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A11FD121B32C8ED00347FC8 /* TestViewController.m */; };
+		2A11FD151B32C8ED00347FC8 /* TestViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2A11FD131B32C8ED00347FC8 /* TestViewController.xib */; };
+		2A11FD191B32CAEA00347FC8 /* EmbedViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A11FD171B32CAEA00347FC8 /* EmbedViewController.m */; };
+		2A11FD1A1B32CAEA00347FC8 /* EmbedViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2A11FD181B32CAEA00347FC8 /* EmbedViewController.xib */; };
 		6E82218BD666680E8AACF28C /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 306264F677C72F1842634674 /* libPods.a */; };
 /* End PBXBuildFile section */
 
@@ -54,6 +58,12 @@
 		2A11FD0C1B32C48800347FC8 /* UIView+AutoLayoutPlus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIView+AutoLayoutPlus.h"; sourceTree = "<group>"; };
 		2A11FD0D1B32C48800347FC8 /* UIView+AutoLayoutPlus.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIView+AutoLayoutPlus.m"; sourceTree = "<group>"; };
 		2A11FD0F1B32C6A300347FC8 /* ViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = ViewController.xib; sourceTree = "<group>"; };
+		2A11FD111B32C8ED00347FC8 /* TestViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestViewController.h; sourceTree = "<group>"; };
+		2A11FD121B32C8ED00347FC8 /* TestViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestViewController.m; sourceTree = "<group>"; };
+		2A11FD131B32C8ED00347FC8 /* TestViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = TestViewController.xib; sourceTree = "<group>"; };
+		2A11FD161B32CAEA00347FC8 /* EmbedViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EmbedViewController.h; sourceTree = "<group>"; };
+		2A11FD171B32CAEA00347FC8 /* EmbedViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EmbedViewController.m; sourceTree = "<group>"; };
+		2A11FD181B32CAEA00347FC8 /* EmbedViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = EmbedViewController.xib; sourceTree = "<group>"; };
 		306264F677C72F1842634674 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA2C4FB24B38DF3735B888BF /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 		CE796567577C1338089F6569 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
@@ -107,6 +117,12 @@
 				2A11FCE01B32B6FB00347FC8 /* ViewController.h */,
 				2A11FCE11B32B6FB00347FC8 /* ViewController.m */,
 				2A11FD0F1B32C6A300347FC8 /* ViewController.xib */,
+				2A11FD111B32C8ED00347FC8 /* TestViewController.h */,
+				2A11FD121B32C8ED00347FC8 /* TestViewController.m */,
+				2A11FD131B32C8ED00347FC8 /* TestViewController.xib */,
+				2A11FD161B32CAEA00347FC8 /* EmbedViewController.h */,
+				2A11FD171B32CAEA00347FC8 /* EmbedViewController.m */,
+				2A11FD181B32CAEA00347FC8 /* EmbedViewController.xib */,
 				2A11FCE61B32B6FB00347FC8 /* Images.xcassets */,
 				2A11FCD91B32B6FB00347FC8 /* Supporting Files */,
 			);
@@ -257,6 +273,8 @@
 			files = (
 				2A11FD041B32B86900347FC8 /* CCScrollableHeaderTabViewController.xib in Resources */,
 				2A11FD101B32C6A300347FC8 /* ViewController.xib in Resources */,
+				2A11FD151B32C8ED00347FC8 /* TestViewController.xib in Resources */,
+				2A11FD1A1B32CAEA00347FC8 /* EmbedViewController.xib in Resources */,
 				2A11FCE71B32B6FB00347FC8 /* Images.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -314,6 +332,8 @@
 				2A11FCE21B32B6FB00347FC8 /* ViewController.m in Sources */,
 				2A11FCDF1B32B6FB00347FC8 /* AppDelegate.m in Sources */,
 				2A11FD0B1B32BFAF00347FC8 /* NSString+Utility.m in Sources */,
+				2A11FD141B32C8ED00347FC8 /* TestViewController.m in Sources */,
+				2A11FD191B32CAEA00347FC8 /* EmbedViewController.m in Sources */,
 				2A11FCDC1B32B6FB00347FC8 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

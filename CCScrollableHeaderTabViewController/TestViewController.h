@@ -1,5 +1,5 @@
 //
-//  ViewController.h
+//  TestViewController.h
 //  CCScrollableHeaderTabViewController
 //
 //  Created by ddrccw on 15/6/18.
@@ -7,9 +7,8 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "CCScrollableHeaderTabViewController.h"
 
-@interface ViewController : UIViewController
-
+@interface TestViewController : CCScrollableHeaderTabViewController
 
 @end
-
