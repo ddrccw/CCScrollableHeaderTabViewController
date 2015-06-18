@@ -24,6 +24,14 @@
    
     if (self.index == 0) {
         self.minHeightOfHeaderView = 0;
+        [self.navigationController setNavigationBarHidden:NO];
+    }
+    else if (self.index == 1){
+        self.minHeightOfHeaderView = 0;
+        [self.navigationController setNavigationBarHidden:NO];
+    }
+    else if (self.index == 2){
+        [self.navigationController setNavigationBarHidden:YES];
     }
     else {
         [self.navigationController setNavigationBarHidden:YES];

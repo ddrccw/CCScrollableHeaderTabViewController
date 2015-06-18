@@ -195,7 +195,12 @@
 
             if (self.scrollToTop) {
                 if ([self.class isEqualOrGreaterThanIOS7]) {
-                    [scrollView setContentOffset:CGPointMake(0, -44) animated:NO];
+                    if (self.navigationController.isNavigationBarHidden) {
+                        [scrollView setContentOffset:CGPointMake(0, -64) animated:NO];
+                    }
+                    else {
+                        [scrollView setContentOffset:CGPointMake(0, -44) animated:NO];
+                    }
                 }
                 else {
                     [scrollView setContentOffset:CGPointMake(0, -44) animated:NO];

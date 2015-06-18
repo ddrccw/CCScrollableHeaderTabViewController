@@ -34,7 +34,7 @@
 
 #pragma mark - table view data souce and delegate
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return 2;
+    return 4;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -45,10 +45,16 @@
     }
     
     if (indexPath.row == 0) {
-        cell.textLabel.text = @"default";
+        cell.textLabel.text = @"default: navibar.hidden=NO, not scroll to top";
     }
-    else {
-        cell.textLabel.text = @"auto scroll to top";
+    else if (indexPath.row == 1) {
+        cell.textLabel.text = @"navibar.hidden=NO, auto scroll to top";
+    }
+    else if (indexPath.row == 2) {
+        cell.textLabel.text = @"navibar.hidden=YES, not scroll to top";
+    }
+    else if (indexPath.row == 3) {
+        cell.textLabel.text = @"navibar.hidden=YES, auto scroll to top";
     }
     return cell;
 }
@@ -57,9 +63,14 @@
     TestViewController *tvc = [TestViewController new];
     tvc.index = indexPath.row;
     if (indexPath.row == 0) {
-
     }
-    else {
+    else if (indexPath.row == 1) {
+        tvc.scrollToTop = YES;
+    }
+    else if (indexPath.row == 2) {
+        
+    }
+    else if (indexPath.row == 3) {
         tvc.scrollToTop = YES;
     }
 
