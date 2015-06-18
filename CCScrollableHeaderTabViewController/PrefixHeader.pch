@@ -1,0 +1,17 @@
+//
+//  PrefixHeader.pch
+//  CCScrollableHeaderTabViewController
+//
+//  Created by ddrccw on 15/6/18.
+//  Copyright (c) 2015年 ddrccw. All rights reserved.
+//
+
+#ifndef CCScrollableHeaderTabViewController_PrefixHeader_pch
+#define CCScrollableHeaderTabViewController_PrefixHeader_pch
+
+#define RGBA(r, g, b, a) [UIColor colorWithRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:a]
+#define RGB(r, g, b) [UIColor colorWithRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1]
+
+#import "UIView+AutoLayoutPlus.h"
+
+#endif

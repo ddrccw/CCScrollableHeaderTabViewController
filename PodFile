@@ -1,0 +1,9 @@
+source 'https://github.com/CocoaPods/Specs.git'
+
+platform :ios, '6.0'
+
+link_with 'CCScrollableHeaderTabViewController'
+
+pod 'PureLayout', '~> 2.0.6'
+#pod 'pop', '~> 1.0.7'
+
