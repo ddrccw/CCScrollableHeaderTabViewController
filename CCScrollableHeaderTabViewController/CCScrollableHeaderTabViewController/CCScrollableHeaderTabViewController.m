@@ -7,13 +7,21 @@
 //
 
 #import "CCScrollableHeaderTabViewController.h"
+#import <POP.h>
+
+static NSString * const kPanDecelerateKey = @"decelerate";
+static NSString * const kPanBounceKey = @"bounce";
 
 @interface CCScrollableHeaderTabViewController ()
-<UIScrollViewDelegate>
+<UIScrollViewDelegate, UIGestureRecognizerDelegate>
 {
     BOOL fixLayoutProblemLessThenIOS8_;
 }
 @property (strong, nonatomic, readwrite) NSArray *viewControllers;
+@property (strong, nonatomic) UIPanGestureRecognizer *panGestureInHeaderView;
+@property (assign, nonatomic) CGPoint lastLocationWhenPanning;
+@property (assign, nonatomic) CGPoint startOffsetWhenPanning;
+@property (assign, nonatomic) CGPoint endOffsetWhenPanning;
 @end
 
 @implementation CCScrollableHeaderTabViewController
@@ -50,6 +58,10 @@
     else {
         _minHeightOfHeaderView = 0;
     }
+    
+    self.panGestureInHeaderView = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panInHeaderView:)];
+    self.panGestureInHeaderView.delegate = self;
+    [self.headerView addGestureRecognizer:self.panGestureInHeaderView];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -244,6 +256,88 @@
     }
 }
 
+- (UIScrollView *)scrollViewWithSelectedViewController {
+    return [self scrollViewWithSubViewController:self.selectedViewController];
+}
+
+////////////////////////////////////////////////////////////////////////////////
+#pragma mark - gesture
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
+    UIViewController *selectedViewController = self.selectedViewController;
+    UIScrollView *scrollView = [self scrollViewWithSubViewController:selectedViewController];
+    if (scrollView) {
+        return YES;
+    }
+    return NO;
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
+shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
+{
+    return YES;
+}
+
+- (void)panInHeaderView:(UIPanGestureRecognizer *)gesture {
+    UIViewController *selectedViewController = self.selectedViewController;
+    UIScrollView *scrollView = [self scrollViewWithSubViewController:selectedViewController];
+    [scrollView pop_removeAnimationForKey:kPanDecelerateKey];
+    [scrollView pop_removeAnimationForKey:kPanBounceKey];
+    
+    CGPoint tran = [gesture translationInView:self.headerView];
+    if (UIGestureRecognizerStateBegan == [gesture state]){
+        self.lastLocationWhenPanning = [gesture locationInView:self.headerView];
+        self.startOffsetWhenPanning = scrollView.contentOffset;
+    }
+    else if (UIGestureRecognizerStateChanged == [gesture state]) {
+        CGPoint currentLocation = [gesture locationInView:self.headerView];
+        CGPoint tmpTran = CGPointMake(currentLocation.x - self.lastLocationWhenPanning.x,
+                                      currentLocation.y - self.lastLocationWhenPanning.y);
+        if (CGPointEqualToPoint(tmpTran, CGPointZero)) {
+            return;
+        }
+        else if (fabs(tmpTran.x) <= fabs(tmpTran.y) || tmpTran.x == 0) {   //up or down
+            CGPoint offset = self.startOffsetWhenPanning;
+            CGFloat kMaxoffset = self.maxHeightOfHeaderView - self.minHeightOfHeaderView;
+            if (tmpTran.y > 0) {   //down
+                if (!self.headerViewTopContraint.constant) {   //to the max headerView
+                    return;
+                }
+                
+                offset.y = MAX(offset.y - tran.y, -scrollView.contentInset.top);
+            }
+            else {   //up
+                if (fabs(fabs(self.headerViewTopContraint.constant) - kMaxoffset) < 0.001) { //min height
+                    return;
+                }
+                
+                offset.y = MIN(offset.y - tran.y, -(scrollView.contentInset.top - kMaxoffset));
+            }
+            [scrollView setContentOffset:offset animated:NO];
+        }
+        self.lastLocationWhenPanning = currentLocation;
+    }
+    else {
+        CGPoint currentLocation = [gesture locationInView:self.headerView];
+        CGPoint tmpTran = CGPointMake(currentLocation.x - self.lastLocationWhenPanning.x,
+                                      currentLocation.y - self.lastLocationWhenPanning.y);
+        if (fabs(tmpTran.x) <= fabs(tmpTran.y) || tmpTran.x == 0) {   //up or down
+            BOOL needDecay = self.headerViewTopContraint.constant && fabs(scrollView.contentOffset.y) < scrollView.contentInset.top;
+            //            NSLog(@"needDecay=%d", needDecay);
+            if (needDecay) {
+                CGPoint velocity = [gesture velocityInView:self.headerView];
+                velocity.x = 0.0;
+                
+                velocity.x = -velocity.x;
+                velocity.y = -velocity.y;
+                
+                POPDecayAnimation *decayAnimation = [POPDecayAnimation animationWithPropertyNamed:kPOPScrollViewContentOffset];
+                decayAnimation.velocity = [NSValue valueWithCGPoint:velocity];
+                [scrollView pop_addAnimation:decayAnimation forKey:kPanDecelerateKey];
+            }
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark - CCSimpleTabView
 - (void)simpleTabView:(CCSimpleTabView *)simpleTabView didSelectedTabItemAtIndex:(NSInteger)index {
@@ -262,6 +356,35 @@
             return;
         }
         
+        if (scrollView.isDragging) {
+            [scrollView pop_removeAnimationForKey:kPanDecelerateKey];
+        }
+        
+        [scrollView pop_removeAnimationForKey:kPanBounceKey];  //防止正在panInHeaderView的bounce时，从下发的scrollView触发scroll的影响
+        POPDecayAnimation *decayAnimation = [scrollView pop_animationForKey:kPanDecelerateKey];
+        if (decayAnimation) {
+            CGFloat kMaxoffset = self.maxHeightOfHeaderView - self.minHeightOfHeaderView;
+            if (!self.headerViewTopContraint.constant && fabs(scrollView.contentOffset.y) > scrollView.contentInset.top) {  //max height
+                POPSpringAnimation *springAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPScrollViewContentOffset];
+                springAnimation.velocity = decayAnimation.velocity;
+                springAnimation.toValue = [NSValue valueWithCGPoint:CGPointMake(0, -scrollView.contentInset.top)];
+                springAnimation.springBounciness = 0.0;
+                springAnimation.springSpeed = 5.0;
+                [scrollView pop_addAnimation:springAnimation forKey:kPanBounceKey];
+                [scrollView pop_removeAnimationForKey:kPanDecelerateKey];
+            }
+            else if (fabs(fabs(self.headerViewTopContraint.constant) - kMaxoffset) < 0.001 &&
+                     fabs(scrollView.contentOffset.y) < scrollView.contentInset.top - kMaxoffset)     //min height
+            {   //min height
+                POPSpringAnimation *springAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPScrollViewContentOffset];
+                springAnimation.velocity = decayAnimation.velocity;
+                springAnimation.toValue = [NSValue valueWithCGPoint:CGPointMake(0, -(scrollView.contentInset.top - kMaxoffset))];
+                springAnimation.springBounciness = 0.0;
+                springAnimation.springSpeed = 5.0;
+                [scrollView pop_addAnimation:springAnimation forKey:kPanBounceKey];
+                [scrollView pop_removeAnimationForKey:kPanDecelerateKey];
+            }
+        }
         [self layoutHeaderViewAndTabBar];
     }
     else if ([keyPath isEqualToString:@"tableHeaderView"]) {
