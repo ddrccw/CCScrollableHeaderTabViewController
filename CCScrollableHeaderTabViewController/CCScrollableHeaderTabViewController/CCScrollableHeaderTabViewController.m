@@ -44,6 +44,7 @@ static NSString * const kPanBounceKey = @"bounce";
     self.tabView.delegate = self;
     self.containerView.showsVerticalScrollIndicator = YES;
     self.containerView.showsHorizontalScrollIndicator = NO;
+    self.containerView.clipsToBounds = YES;
     self.containerView.pagingEnabled = YES;
     self.containerView.bounces = NO;
     self.containerView.delegate = self;
