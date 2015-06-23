@@ -8,6 +8,7 @@
 
 #import "TestViewController.h"
 #import "EmbedViewController.h"
+#import "Embed2ViewController.h"
 
 @interface TestViewController ()
 
@@ -38,11 +39,14 @@
     }
     [self configTabView];
     
-    EmbedViewController *evc = [EmbedViewController new];
+//    EmbedViewController *evc = [EmbedViewController new];
+    Embed2ViewController *evc = [Embed2ViewController new];
     EmbedViewController *evc1 = [EmbedViewController new];
     EmbedViewController *evc2 = [EmbedViewController new];
 
     self.viewControllers = @[evc, evc1, evc2];
+    
+//    self.containerView.contentInset = UIEdgeInsetsMake(0, 0, 50, 0);
 }
 
 - (void)didReceiveMemoryWarning {

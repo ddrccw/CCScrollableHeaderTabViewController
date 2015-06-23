@@ -22,6 +22,10 @@
 		2A11FD151B32C8ED00347FC8 /* TestViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2A11FD131B32C8ED00347FC8 /* TestViewController.xib */; };
 		2A11FD191B32CAEA00347FC8 /* EmbedViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A11FD171B32CAEA00347FC8 /* EmbedViewController.m */; };
 		2A11FD1A1B32CAEA00347FC8 /* EmbedViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2A11FD181B32CAEA00347FC8 /* EmbedViewController.xib */; };
+		2A7DD01D1B39068E00CFB744 /* Embed2ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A7DD01B1B39068E00CFB744 /* Embed2ViewController.m */; };
+		2A7DD01E1B39068E00CFB744 /* Embed2ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A7DD01B1B39068E00CFB744 /* Embed2ViewController.m */; };
+		2A7DD01F1B39068E00CFB744 /* Embed2ViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2A7DD01C1B39068E00CFB744 /* Embed2ViewController.xib */; };
+		2A7DD0201B39068E00CFB744 /* Embed2ViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2A7DD01C1B39068E00CFB744 /* Embed2ViewController.xib */; };
 		6E82218BD666680E8AACF28C /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 306264F677C72F1842634674 /* libPods.a */; };
 /* End PBXBuildFile section */
 
@@ -64,6 +68,9 @@
 		2A11FD161B32CAEA00347FC8 /* EmbedViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EmbedViewController.h; sourceTree = "<group>"; };
 		2A11FD171B32CAEA00347FC8 /* EmbedViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EmbedViewController.m; sourceTree = "<group>"; };
 		2A11FD181B32CAEA00347FC8 /* EmbedViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = EmbedViewController.xib; sourceTree = "<group>"; };
+		2A7DD01A1B39068E00CFB744 /* Embed2ViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Embed2ViewController.h; sourceTree = "<group>"; };
+		2A7DD01B1B39068E00CFB744 /* Embed2ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Embed2ViewController.m; sourceTree = "<group>"; };
+		2A7DD01C1B39068E00CFB744 /* Embed2ViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Embed2ViewController.xib; sourceTree = "<group>"; };
 		306264F677C72F1842634674 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA2C4FB24B38DF3735B888BF /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 		CE796567577C1338089F6569 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
@@ -123,6 +130,9 @@
 				2A11FD161B32CAEA00347FC8 /* EmbedViewController.h */,
 				2A11FD171B32CAEA00347FC8 /* EmbedViewController.m */,
 				2A11FD181B32CAEA00347FC8 /* EmbedViewController.xib */,
+				2A7DD01A1B39068E00CFB744 /* Embed2ViewController.h */,
+				2A7DD01B1B39068E00CFB744 /* Embed2ViewController.m */,
+				2A7DD01C1B39068E00CFB744 /* Embed2ViewController.xib */,
 				2A11FCE61B32B6FB00347FC8 /* Images.xcassets */,
 				2A11FCD91B32B6FB00347FC8 /* Supporting Files */,
 			);
@@ -274,6 +284,7 @@
 				2A11FD041B32B86900347FC8 /* CCScrollableHeaderTabViewController.xib in Resources */,
 				2A11FD101B32C6A300347FC8 /* ViewController.xib in Resources */,
 				2A11FD151B32C8ED00347FC8 /* TestViewController.xib in Resources */,
+				2A7DD01F1B39068E00CFB744 /* Embed2ViewController.xib in Resources */,
 				2A11FD1A1B32CAEA00347FC8 /* EmbedViewController.xib in Resources */,
 				2A11FCE71B32B6FB00347FC8 /* Images.xcassets in Resources */,
 			);
@@ -283,6 +294,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2A7DD0201B39068E00CFB744 /* Embed2ViewController.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -327,6 +339,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2A11FD071B32B8B600347FC8 /* CCSimpleTabView.m in Sources */,
+				2A7DD01D1B39068E00CFB744 /* Embed2ViewController.m in Sources */,
 				2A11FD0E1B32C48800347FC8 /* UIView+AutoLayoutPlus.m in Sources */,
 				2A11FD031B32B86900347FC8 /* CCScrollableHeaderTabViewController.m in Sources */,
 				2A11FCE21B32B6FB00347FC8 /* ViewController.m in Sources */,
@@ -343,6 +356,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2A11FCF61B32B6FB00347FC8 /* CCScrollableHeaderTabViewControllerTests.m in Sources */,
+				2A7DD01E1B39068E00CFB744 /* Embed2ViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
