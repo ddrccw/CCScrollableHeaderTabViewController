@@ -42,7 +42,7 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:kCellId];
     }
     
-    cell.textLabel.text = [NSString stringWithFormat:@"hello %d", indexPath.row];
+    cell.textLabel.text = [NSString stringWithFormat:@"hello %ld", (long)indexPath.row];
     return cell;
 }
 @end

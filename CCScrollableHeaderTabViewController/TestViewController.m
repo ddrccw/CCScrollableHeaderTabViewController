@@ -43,6 +43,8 @@
     EmbedViewController *evc2 = [EmbedViewController new];
 
     self.viewControllers = @[evc, evc1, evc2];
+    
+//    self.selectedIndex = 1;
 }
 
 - (void)didReceiveMemoryWarning {
