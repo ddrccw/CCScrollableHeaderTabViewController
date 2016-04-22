@@ -1,13 +1,16 @@
 PODS:
+  - KVOController (1.0.3)
   - pop (1.0.7)
-  - PureLayout (2.0.6)
+  - PureLayout (3.0.1)
 
 DEPENDENCIES:
+  - KVOController (~> 1.0.3)
   - pop (~> 1.0.7)
-  - PureLayout (~> 2.0.6)
+  - PureLayout (~> 3.0.1)
 
 SPEC CHECKSUMS:
+  KVOController: 9fd8f0343670994e4b6f9f0b31f5a45663f3e1cf
   pop: 628ffc631644601567ee8bfaaaea493ebd7d0923
-  PureLayout: f25f0bb904d5ccfe6e31da3cb869185259f02e0d
+  PureLayout: f35f5384c9c4e4479df041dbe33ad7577b71ddfb
 
-COCOAPODS: 0.35.0
+COCOAPODS: 0.39.0

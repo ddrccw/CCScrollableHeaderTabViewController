@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="7706" systemVersion="14D2134" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="9059" systemVersion="15B42" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="7703"/>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9049"/>
     </dependencies>
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="CCScrollableHeaderTabViewController">
             <connections>
                 <outlet property="containerView" destination="fGJ-5U-DzU" id="gH1-M0-ESq"/>
                 <outlet property="headerView" destination="FzS-ta-U0K" id="1z0-jy-1Ki"/>
+                <outlet property="headerViewHeightConstraint" destination="ci4-uK-diw" id="bBY-xR-Sgr"/>
                 <outlet property="headerViewTopContraint" destination="DKI-zY-crY" id="t32-uB-qoP"/>
                 <outlet property="tabView" destination="51b-Fo-kFM" id="J9k-Rh-SCI"/>
                 <outlet property="view" destination="Isv-7J-nYC" id="A1l-ck-0uM"/>
@@ -20,9 +22,11 @@
             <subviews>
                 <scrollView multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="fGJ-5U-DzU">
                     <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
+                    <animations/>
                 </scrollView>
                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="FzS-ta-U0K">
                     <rect key="frame" x="0.0" y="0.0" width="320" height="218"/>
+                    <animations/>
                     <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="218" id="ci4-uK-diw"/>
@@ -31,14 +35,16 @@
                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="7Nz-1V-u7W">
                     <rect key="frame" x="0.0" y="218" width="320" height="44"/>
                     <subviews>
-                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="51b-Fo-kFM" customClass="CCSimpleTabView">
+                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="51b-Fo-kFM" customClass="EduSimpleTabView">
                             <rect key="frame" x="50" y="0.0" width="220" height="44"/>
+                            <animations/>
                             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                             <constraints>
                                 <constraint firstAttribute="width" constant="220" id="kZG-WL-XQD"/>
                             </constraints>
                         </view>
                     </subviews>
+                    <animations/>
                     <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                     <constraints>
                         <constraint firstAttribute="bottom" secondItem="51b-Fo-kFM" secondAttribute="bottom" id="1BK-oN-xVV"/>
@@ -48,6 +54,7 @@
                     </constraints>
                 </view>
             </subviews>
+            <animations/>
             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
             <constraints>
                 <constraint firstItem="FzS-ta-U0K" firstAttribute="leading" secondItem="Isv-7J-nYC" secondAttribute="leading" id="1te-qd-gXk"/>

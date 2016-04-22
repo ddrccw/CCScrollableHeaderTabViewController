@@ -6,8 +6,8 @@
     },
     {
       "idiom" : "iphone",
-      "scale" : "2x",
-      "filename" : "line.png"
+      "filename" : "line.png",
+      "scale" : "2x"
     },
     {
       "idiom" : "iphone",
@@ -21,6 +21,10 @@
     {
       "idiom" : "ipad",
       "scale" : "1x"
+    },
+    {
+      "idiom" : "ipad",
+      "scale" : "2x"
     }
   ],
   "info" : {

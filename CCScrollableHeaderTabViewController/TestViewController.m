@@ -16,7 +16,9 @@
 @implementation TestViewController
 
 - (void)viewDidLoad {
+    BOOL scrollToTop = self.scrollToTop;
     [super viewDidLoad];
+    self.scrollToTop = scrollToTop;
     
     if ([self respondsToSelector:@selector(edgesForExtendedLayout)]) {
         self.edgesForExtendedLayout = UIRectEdgeNone;

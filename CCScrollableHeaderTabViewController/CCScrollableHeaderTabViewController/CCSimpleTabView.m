@@ -1,6 +1,6 @@
 //
 //  CCSimpleTabView.m
-//  
+//
 //
 //  Created by ddrccw on 14-6-20.
 //
@@ -11,12 +11,19 @@
 static const int kTabItemTagOffset = 0x100;
 
 @interface CCSimpleTabItem ()
-@property (nonatomic, strong) UILabel *titleLabel;
 @property (nonatomic, strong) UIImageView *iconImageView;
 @property (nonatomic, strong) UIButton *badgeView;
+@property (nonatomic, assign) CCSimpleTabItemType type;
 @end
 
 @implementation CCSimpleTabItem
+
+- (instancetype)init {
+    if (self = [super init]) {
+        _type = CCSimpleTabItemTypeAutoResize;
+    }
+    return self;
+}
 
 - (instancetype)initWithTitle:(NSString *)title
                          font:(UIFont *)font
@@ -39,7 +46,7 @@ static const int kTabItemTagOffset = 0x100;
         _badgeView.hidden = YES;
         [self addSubview:_badgeView];
         
-        if (![NSString isNilOrEmptyForString:title]) {
+        if (!([title isEqual:[NSNull null]] || !title || !title.length)) {
             _titleLabel = [[UILabel alloc] init];
             _titleLabel.text = title;
             _titleLabel.font = font;
@@ -83,9 +90,9 @@ static const int kTabItemTagOffset = 0x100;
                          font:(UIFont *)font
                         color:(UIColor *)color
              highlightedColor:(UIColor *)highlightedColor
+                      padding:(CGFloat)padding
 {
     if (self = [self init]) {
-        [self setTranslatesAutoresizingMaskIntoConstraints:NO];
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.text = title;
         _titleLabel.textAlignment = NSTextAlignmentCenter;
@@ -94,8 +101,37 @@ static const int kTabItemTagOffset = 0x100;
         _titleLabel.font = font;
         [_titleLabel setHighlightedTextColor:highlightedColor];
         [_titleLabel setTextColor:color];
+        [_titleLabel sizeToFit];
+        if (padding > 0) {
+            _type = CCSimpleTabItemTypeFixWidth;
+            self.bounds = (CGRect){
+                .origin = CGPointZero,
+                .size = CGSizeMake(_titleLabel.bounds.size.width + padding * 2, _titleLabel.bounds.size.height)
+            };
+            [self autoSetDimension:ALDimensionWidth toSize:self.bounds.size.width];
+        }
+        else {
+            _type = CCSimpleTabItemTypeAutoResize;
+        }
+        
+        [self setTranslatesAutoresizingMaskIntoConstraints:NO];
         [self addSubview:_titleLabel];
-        [_titleLabel autoPinEdgesToSuperviewEdgesWithInsets:UIEdgeInsetsZero];
+        [_titleLabel autoPinEdgesToSuperviewEdgesWithInsets:UIEdgeInsetsMake(0, padding, 0, padding)];
+    }
+    return self;
+}
+
+- (instancetype)initWithTitle:(NSString *)title
+                         font:(UIFont *)font
+                        color:(UIColor *)color
+             highlightedColor:(UIColor *)highlightedColor
+{
+    if (self = [self initWithTitle:title
+                              font:font
+                             color:color
+                  highlightedColor:highlightedColor
+                           padding:0])
+    {
     }
     return self;
 }
@@ -103,9 +139,25 @@ static const int kTabItemTagOffset = 0x100;
 - (instancetype)initWithTitle:(NSString *)title
                         color:(UIColor *)color
              highlightedColor:(UIColor *)highlightedColor
+                      padding:(CGFloat)padding
+{
+    if (self = [self initWithTitle:title
+                              font:[UIFont systemFontOfSize:15]
+                             color:color
+                  highlightedColor:highlightedColor
+                           padding:padding])
+    {
+    }
+    return self;
+    
+}
+
+- (instancetype)initWithTitle:(NSString *)title
+                        color:(UIColor *)color
+             highlightedColor:(UIColor *)highlightedColor
 {
     return [self initWithTitle:title
-                          font:[UIFont systemFontOfSize:14]
+                          font:[UIFont systemFontOfSize:15]
                          color:color
               highlightedColor:highlightedColor];
 }
@@ -135,14 +187,20 @@ static const int kTabItemTagOffset = 0x100;
 @end
 
 ////////////////////////////////////////////////////////////////////////////////
+typedef NS_ENUM(NSInteger, CCSimpleTabViewLayoutType) {
+    CCSimpleTabViewLayoutTypeAutoResizeItem,
+    CCSimpleTabViewLayoutTypeFixWidthItem
+};
+
 @interface CCSimpleTabView ()
-@property (strong, nonatomic) NSArray *tabItems;
+@property (strong, nonatomic) NSArray<CCSimpleTabItem *> *tabItems;
 @property (strong, nonatomic) NSArray *proportions;
 @property (assign, nonatomic) CGFloat sumOfproportions;
 @property (strong, nonatomic) UIView *containerView;
 @property (strong, nonatomic) UIScrollView *scrollView;
 @property (strong, nonatomic) UIImageView *indicatorImageView;
 @property (strong, nonatomic) NSLayoutConstraint *indicatorLeadingConstraint;
+@property (assign, nonatomic) CCSimpleTabViewLayoutType layoutType;
 @end
 
 @implementation CCSimpleTabView
@@ -164,8 +222,7 @@ static const int kTabItemTagOffset = 0x100;
     _scrollView.backgroundColor = [UIColor clearColor];
     _scrollView.bounces = NO;
     
-    //TODO:
-    _scrollView.scrollEnabled = NO;
+    _scrollView.scrollEnabled = YES;
     
     [_containerView addSubview:_scrollView];
     [_scrollView autoPinEdgesToSuperviewEdgesWithInsets:UIEdgeInsetsZero];
@@ -178,7 +235,7 @@ static const int kTabItemTagOffset = 0x100;
 {
     self = [super initWithFrame:frame];
     if (self) {
-        // Initialization code
+        [self setup];
     }
     return self;
 }
@@ -211,7 +268,7 @@ static const int kTabItemTagOffset = 0x100;
     return self.tabItems.count;
 }
 
-- (void)setTabItems:(NSArray *)tabItems {
+- (void)setTabItems:(NSArray<CCSimpleTabItem *> *)tabItems {
     NSMutableArray *proportions = [NSMutableArray arrayWithCapacity:tabItems.count];
     NSInteger i = 0;
     while (i < tabItems.count) {
@@ -221,7 +278,7 @@ static const int kTabItemTagOffset = 0x100;
     [self setTabItems:tabItems proportions:[NSArray arrayWithArray:proportions]];
 }
 
-- (void)setTabItems:(NSArray *)tabItems proportions:(NSArray *)proportions {
+- (void)setTabItems:(NSArray<CCSimpleTabItem *> *)tabItems proportions:(NSArray *)proportions {
     NSAssert(tabItems.count == proportions.count, @"tabItems.count should be equal to proportions.count");
     if (_tabItems != tabItems) {
         _tabItems = tabItems;
@@ -257,21 +314,8 @@ static const int kTabItemTagOffset = 0x100;
     if (self.tabItems.count) {
         [self.indicatorLeadingConstraint autoRemove];
         
-        CGFloat w = self.bounds.size.width;
-        if (!UIEdgeInsetsEqualToEdgeInsets(self.tabInsets, UIEdgeInsetsZero)) {
-            w = w - self.tabInsets.left - self.tabInsets.right;
-        }
-        
-        CGFloat tmp = 0;
-        for (NSInteger i = 0; i < _selectedTabItemIndex + 1; ++i) {
-            if (i == _selectedTabItemIndex) {
-                tmp += [self normalizedProportionOfTabItemAtIndex:i] / 2;
-            }
-            else {
-                tmp += [self normalizedProportionOfTabItemAtIndex:i];
-            }
-        }
-        CGFloat offset = w * tmp - self.indicatorImageView.bounds.size.width / 2;
+        CGFloat offset = 0;
+        offset = self.selectedTabItem.center.x - self.indicatorImageView.bounds.size.width / 2;
         self.indicatorLeadingConstraint = [self.indicatorImageView autoPinEdge:ALEdgeLeading
                                                                         toEdge:ALEdgeLeading
                                                                         ofView:self.scrollView
@@ -280,6 +324,7 @@ static const int kTabItemTagOffset = 0x100;
 }
 
 - (void)reloadScrollView {
+    _layoutType = CCSimpleTabViewLayoutTypeAutoResizeItem;
     [self removeMenuItems];
     [self addMenuItems];
     
@@ -289,7 +334,7 @@ static const int kTabItemTagOffset = 0x100;
 
 - (void)removeMenuItems {
     NSArray *views = [self.scrollView subviews];
-	for (UIView *v in views) {
+    for (UIView *v in views) {
         if (v.tag >= kTabItemTagOffset) {
             [self.scrollView removeAllEdgeConstaintsToView:v];
             [v removeFromSuperview];
@@ -301,7 +346,9 @@ static const int kTabItemTagOffset = 0x100;
     CCSimpleTabItem *tabItem = nil;
     CCSimpleTabItem *lastTabItem = nil;
     NSUInteger count = [self.tabItems count];
-    for (int i = 0; i < count; ++i) {
+    CGFloat width = 0;
+    
+    for (NSInteger i = 0; i < count; ++i) {
         tabItem = self.tabItems[i];
         tabItem.tag = kTabItemTagOffset + i;
         [tabItem addTarget:self
@@ -313,14 +360,27 @@ static const int kTabItemTagOffset = 0x100;
             [tabItem autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:0];
             [tabItem autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:0];
             [tabItem autoPinEdgeToSuperviewEdge:ALEdgeLeading withInset:0];
-            [tabItem autoMatchDimension:ALDimensionWidth toDimension:ALDimensionWidth ofView:self.containerView withMultiplier:proportion];
+            if (tabItem.type == CCSimpleTabItemTypeAutoResize) {
+                [tabItem autoMatchDimension:ALDimensionWidth toDimension:ALDimensionWidth ofView:self.containerView withMultiplier:proportion];
+            }
+            else {
+                _layoutType = CCSimpleTabViewLayoutTypeFixWidthItem;
+                width = tabItem.bounds.size.width;
+            }
             [tabItem autoMatchDimension:ALDimensionHeight toDimension:ALDimensionHeight ofView:self.containerView];
             
             if (i == count - 1) {
                 [tabItem autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:0];
-
                 proportion = [self normalizedProportionOfTabItemAtIndex:0];
-                CGFloat offset = (self.scrollView.bounds.size.width * proportion) / 2 - self.indicatorImageView.bounds.size.width / 2;
+                CGFloat offset = 0;
+                if (tabItem.type == CCSimpleTabItemTypeAutoResize) {
+                    offset = (self.scrollView.bounds.size.width * proportion) / 2 - self.indicatorImageView.bounds.size.width / 2;
+                }
+                else {
+                    self.scrollView.contentSize = CGSizeMake(width, self.containerView.bounds.size.height);
+                    offset = (self.scrollView.contentSize.width * proportion) / 2 - self.indicatorImageView.bounds.size.width / 2;
+                }
+                
                 [_scrollView addSubview:_indicatorImageView];
                 self.indicatorImageView.tag = count + kTabItemTagOffset;
                 [self.indicatorImageView autoPinEdge:ALEdgeBottom toEdge:ALEdgeBottom ofView:self.scrollView];
@@ -334,12 +394,24 @@ static const int kTabItemTagOffset = 0x100;
             [tabItem autoPinEdge:ALEdgeTop toEdge:ALEdgeTop ofView:lastTabItem];
             [tabItem autoPinEdge:ALEdgeBottom toEdge:ALEdgeBottom ofView:lastTabItem];
             [tabItem autoPinEdge:ALEdgeLeading toEdge:ALEdgeTrailing ofView:lastTabItem];
-            [tabItem autoMatchDimension:ALDimensionWidth toDimension:ALDimensionWidth ofView:self.containerView withMultiplier:proportion];
+            if (tabItem.type == CCSimpleTabItemTypeAutoResize) {
+                [tabItem autoMatchDimension:ALDimensionWidth toDimension:ALDimensionWidth ofView:self.containerView withMultiplier:proportion];
+            }
+            else {
+                width += tabItem.bounds.size.width;
+            }
             if (i == count - 1) {
                 [tabItem autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:0];
-                
                 proportion = [self normalizedProportionOfTabItemAtIndex:0];
-                CGFloat offset = (self.scrollView.bounds.size.width * proportion) / 2 - self.indicatorImageView.bounds.size.width / 2;
+                CGFloat offset = 0;
+                if (tabItem.type == CCSimpleTabItemTypeAutoResize) {
+                    offset = (self.scrollView.bounds.size.width * proportion) / 2 - self.indicatorImageView.bounds.size.width / 2;
+                }
+                else {
+                    self.scrollView.contentSize = CGSizeMake(width, self.containerView.bounds.size.height);
+                    offset = (self.scrollView.contentSize.width * proportion) / 2 - self.indicatorImageView.bounds.size.width / 2;
+                }
+                
                 [_scrollView addSubview:_indicatorImageView];
                 self.indicatorImageView.tag = count + kTabItemTagOffset;
                 [self.indicatorImageView autoPinEdge:ALEdgeBottom toEdge:ALEdgeBottom ofView:self.scrollView];
@@ -382,6 +454,7 @@ static const int kTabItemTagOffset = 0x100;
         _selectedTabItemIndex = selectedTabItemIndex;
         self.selectedTabItem = toTabItem;
         
+        [self.scrollView scrollRectToVisible:toTabItem.frame animated:animated];
         if (animated) {
             [UIView animateWithDuration:.2 animations:^{
                 [self relocateIndicator];

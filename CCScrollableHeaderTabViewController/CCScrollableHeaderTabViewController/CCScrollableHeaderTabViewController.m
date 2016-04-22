@@ -1,27 +1,114 @@
 //
 //  CCScrollableHeaderTabViewController.m
-//  
+//  Edu901iPhone
 //
 //  Created by ddrccw on 15-1-5.
-//  Copyright (c) 2015年 ddrccw. All rights reserved.
+//  Copyright (c) 2015年 user. All rights reserved.
 //
 
 #import "CCScrollableHeaderTabViewController.h"
+#import <objc/runtime.h>
 #import <POP.h>
+#import <KVOController/FBKVOController.h>
 
 static NSString * const kPanDecelerateKey = @"decelerate";
 static NSString * const kPanBounceKey = @"bounce";
+static NSInteger kMaxNumberOfCacheViewController = 3;
 
+static const char kScrollObserverKey;
+
+////////////////////////////////////////////////////////////////////////////////
+@interface UITableView (CCScrollableHeaderTabViewControllerPrivate)
+@end
+
+@implementation UITableView (CCScrollableHeaderTabViewControllerPrivate)
+
++ (void)load
+{
+
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        Class class = [self class];
+        
+        SEL originalSelector = @selector(reloadData);
+        SEL swizzledSelector = @selector(cc_reloadData);
+        
+        Method originalMethod = class_getInstanceMethod(class, originalSelector);
+        Method swizzledMethod = class_getInstanceMethod(class, swizzledSelector);
+        
+        BOOL success = class_addMethod(class, originalSelector, method_getImplementation(swizzledMethod), method_getTypeEncoding(swizzledMethod));
+        if (success) {
+            class_replaceMethod(class, swizzledSelector, method_getImplementation(originalMethod), method_getTypeEncoding(originalMethod));
+        } else {
+            method_exchangeImplementations(originalMethod, swizzledMethod);
+        }
+    });
+}
+
+- (void)cc_reloadData {
+    CGPoint offset = CGPointZero;
+    if (self.scrollObserver) {
+        offset = self.contentOffset;
+        [self removeObserverForContentOffset];
+    }
+    
+    [self cc_reloadData];
+    
+    if (self.scrollObserver) {
+        self.contentOffset = offset;
+        [self addObserverForContentOffset];
+    }
+}
+
+@end
+
+@implementation UIScrollView (CCScrollableHeaderTabViewController)
+
+- (void)setScrollObserver:(CCScrollableHeaderTabViewController *)scrollObserver {
+    objc_setAssociatedObject(self, &kScrollObserverKey, scrollObserver, OBJC_ASSOCIATION_ASSIGN);
+}
+
+- (CCScrollableHeaderTabViewController *)scrollObserver {
+    return objc_getAssociatedObject(self, &kScrollObserverKey);
+}
+
+- (void)addObserverForContentOffset {
+    if (self.scrollObserver) {
+        __weak __typeof__(self) weakSelf = self;
+        [self.scrollObserver.KVOController observe:self
+                                           keyPath:@"contentOffset"
+                                           options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld
+                                             block:^(id observer, id object, NSDictionary *change)
+         {
+             __strong __typeof__(self) self = weakSelf;
+             [self.scrollObserver observeValueForKeyPath:@"contentOffset" ofObject:object change:change context:nil];
+         }];
+    }
+}
+
+- (void)removeObserverForContentOffset {
+    if (self.scrollObserver) {
+        [self.scrollObserver.KVOController unobserve:self keyPath:@"contentOffset"];
+    }
+}
+
+@end
+
+////////////////////////////////////////////////////////////////////////////////
 @interface CCScrollableHeaderTabViewController ()
 <UIScrollViewDelegate, UIGestureRecognizerDelegate>
 {
     BOOL fixLayoutProblemLessThenIOS8_;
 }
+@property (strong, nonatomic, readwrite) NSArray *placeHolderViews;
 @property (strong, nonatomic, readwrite) NSArray *viewControllers;
+@property (strong, nonatomic, readwrite) NSMutableArray *cachedviewControllers;
+
 @property (strong, nonatomic) UIPanGestureRecognizer *panGestureInHeaderView;
 @property (assign, nonatomic) CGPoint lastLocationWhenPanning;
 @property (assign, nonatomic) CGPoint startOffsetWhenPanning;
 @property (assign, nonatomic) CGPoint endOffsetWhenPanning;
+@property (strong, nonatomic) FBKVOController *KVOController;
 @end
 
 @implementation CCScrollableHeaderTabViewController
@@ -41,6 +128,13 @@ static NSString * const kPanBounceKey = @"bounce";
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    CGRect rect = self.view.bounds;
+    if (!CGSizeEqualToSize(rect.size, [UIScreen mainScreen].bounds.size)) {
+        rect.size = [UIScreen mainScreen].bounds.size;
+        self.view.bounds = rect;
+        [self.view layoutIfNeeded];
+    }
+
     self.tabView.delegate = self;
     self.containerView.showsVerticalScrollIndicator = YES;
     self.containerView.showsHorizontalScrollIndicator = NO;
@@ -63,6 +157,10 @@ static NSString * const kPanBounceKey = @"bounce";
     self.panGestureInHeaderView = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panInHeaderView:)];
     self.panGestureInHeaderView.delegate = self;
     [self.headerView addGestureRecognizer:self.panGestureInHeaderView];
+    self.headerView.clipsToBounds = YES;
+    
+    self.KVOController = [FBKVOController controllerWithObserver:self];
+    self.cachedviewControllers = [NSMutableArray arrayWithCapacity:kMaxNumberOfCacheViewController];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -83,7 +181,14 @@ static NSString * const kPanBounceKey = @"bounce";
 
 - (void)setViewControllers:(NSArray *)viewControllers {
     if (_viewControllers != viewControllers) {
-        [self removeChildViewControllersAndObservers];
+        [self.placeHolderViews enumerateObjectsUsingBlock:^(UIView *view, NSUInteger idx, BOOL * _Nonnull stop) {
+            [self removeChildViewControllerAndObserverAtIndex:idx];
+            [self.containerView removeAllEdgeConstaintsToView:view];
+            [view removeConstraints:view.constraints];
+            [view removeFromSuperview];
+        }];
+        [_containerView setContentOffset:CGPointZero
+                                animated:NO];
         _viewControllers = viewControllers;
         
         CGSize size = _containerView.bounds.size;
@@ -95,87 +200,174 @@ static NSString * const kPanBounceKey = @"bounce";
         
         // Resize sub view controllers
         NSUInteger count = _viewControllers.count;
-        __block UIViewController *lastViewController = nil;
-                [_containerView setContentSize:(CGSize){size.width * _viewControllers.count, 900.0}];
+        NSMutableArray *placeHolderViews = [NSMutableArray arrayWithCapacity:count];
+//        __block UIViewController *lastViewController = nil;
+        __block UIView *lastPlaceHolderView = nil;
+
+        [_containerView setContentSize:(CGSize){size.width * count, 900.0}];
         [_viewControllers enumerateObjectsUsingBlock:^(UIViewController *vc, NSUInteger idx, BOOL *stop) {
+#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_7_0
             vc.wantsFullScreenLayout = YES;
-            vc.view.translatesAutoresizingMaskIntoConstraints = NO;
-            UIScrollView *scrollView = [self scrollViewWithSubViewController:vc];
-            if (scrollView) {
-                [scrollView addObserver:self
-                             forKeyPath:@"contentOffset"
-                                options:NSKeyValueObservingOptionNew
-                                context:nil];
-                
-                if ([scrollView isKindOfClass:[UITableView class]]) {
-                    [scrollView addObserver:self
-                                 forKeyPath:@"tableHeaderView"
-                                    options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld
-                                    context:nil];
-                }
-            }
-            [self addChildViewController:vc];
-            [_containerView addSubview:vc.view];
-            [vc didMoveToParentViewController:self];
-            
+#endif
+            UIView *placeHolderView = [[UIView alloc] init];
+            placeHolderView.backgroundColor = [UIColor clearColor];
+            placeHolderView.translatesAutoresizingMaskIntoConstraints = NO;
+            [placeHolderViews addObject:placeHolderView];
+            [_containerView addSubview:placeHolderView];
+           
             if (idx == 0) {
-                if (scrollView) {
-                    [vc.view autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:0];
-                    [vc.view autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:0];
-                    [vc.view autoPinEdgeToSuperviewEdge:ALEdgeLeading withInset:0];
-                    [vc.view autoMatchDimension:ALDimensionHeight
-                                    toDimension:ALDimensionHeight
-                                         ofView:self.containerView];
-                    scrollView.contentInset = contentInsets;
-                }
-                else {
-                    [vc.view autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:contentInsets.top];
-                    [vc.view autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:contentInsets.bottom];
-                    [vc.view autoPinEdgeToSuperviewEdge:ALEdgeLeading withInset:0];
-                    [vc.view autoMatchDimension:ALDimensionHeight
-                                    toDimension:ALDimensionHeight
-                                         ofView:self.containerView
-                                     withOffset:-(self.containerView.bounds.size.height - contentInsets.top)];
-                    
-                }
-                [vc.view autoMatchDimension:ALDimensionWidth toDimension:ALDimensionWidth ofView:self.containerView];
+                [placeHolderView autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:0];
+                [placeHolderView autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:0];
+                [placeHolderView autoPinEdgeToSuperviewEdge:ALEdgeLeading withInset:0];
+                [placeHolderView autoMatchDimension:ALDimensionHeight
+                                        toDimension:ALDimensionHeight
+                                             ofView:self.containerView];
+                [placeHolderView autoMatchDimension:ALDimensionWidth toDimension:ALDimensionWidth ofView:self.containerView];
             }
             else {
-                if (scrollView) {
-                    [vc.view autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:0];
-                    [vc.view autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:0];
-                    scrollView.contentInset = contentInsets;
-                }
-                else {
-                    [vc.view autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:contentInsets.top];
-                    [vc.view autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:contentInsets.bottom];
-                }
-                [vc.view autoPinEdge:ALEdgeLeading toEdge:ALEdgeTrailing ofView:lastViewController.view];
-                [vc.view autoMatchDimension:ALDimensionWidth toDimension:ALDimensionWidth ofView:lastViewController.view];
+                [placeHolderView autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:0];
+                [placeHolderView autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:0];
+                [placeHolderView autoPinEdge:ALEdgeLeading toEdge:ALEdgeTrailing ofView:lastPlaceHolderView];
+                [placeHolderView autoMatchDimension:ALDimensionWidth toDimension:ALDimensionWidth ofView:lastPlaceHolderView];
             }
             
-            if (idx == count - 1) {
-                [vc.view autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:0];
+            if (idx < kMaxNumberOfCacheViewController) {
+                BOOL isViewLoaded = [vc isViewLoaded];
+                if (!isViewLoaded) {
+                    [vc.view layoutIfNeeded];
+                }
+                UIScrollView *scrollView = [self scrollViewWithSubViewController:vc];
+                if (scrollView) {
+                    scrollView.contentInset = contentInsets;
+                    if (!self.scrollToTop) {
+                        scrollView.contentOffset = CGPointMake(0, -contentInsets.top);
+                    }
+                }
+                
+                [self addChildViewController:vc intoPlaceHolderView:placeHolderView];
+                [self addObserverForChildViewController:vc];
             }
-            lastViewController = vc;
+
+            
+            if (idx == count - 1) {
+                [placeHolderView autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:0];
+            }
+
+            lastPlaceHolderView = placeHolderView;
         }];
-        [_containerView setContentSize:(CGSize){size.width * _viewControllers.count, 900.0}];
+        
+        self.placeHolderViews = [NSArray arrayWithArray:placeHolderViews];
         _selectedIndex = 0;
     }
 }
 
+- (void)addObserverForChildViewController:(UIViewController *)childViewController {
+    UIScrollView *scrollView = [self scrollViewWithSubViewController:childViewController];
+    if (scrollView) {
+        scrollView.scrollObserver = self;
+        [scrollView addObserverForContentOffset];
+        __weak __typeof__(self) weakSelf = self;
+        [self.KVOController observe:scrollView
+                            keyPath:@"tableHeaderView"
+                            options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld
+                              block:^(id observer, id object, NSDictionary *change)
+         {
+             __strong __typeof__(self) self = weakSelf;
+             [self observeValueForKeyPath:@"tableHeaderView" ofObject:object change:change context:nil];
+         }];
+    }
+}
+
+- (void)addChildViewController:(UIViewController *)childViewController intoPlaceHolderView:(UIView *)placeHolderView {
+    childViewController.view.translatesAutoresizingMaskIntoConstraints = NO;
+    [self addChildViewController:childViewController];
+    [placeHolderView addSubview:childViewController.view];
+    [childViewController didMoveToParentViewController:self];
+    [childViewController.view autoPinEdgesToSuperviewEdges];
+    [self.cachedviewControllers addObject:childViewController];
+}
+
+- (void)addChildViewControllerAndObserverAtIndex:(NSInteger)index {
+    UIViewController *addingVC = self.viewControllers[index];
+    UIView *placeHolderView = self.placeHolderViews[index];
+    [self addChildViewController:addingVC intoPlaceHolderView:placeHolderView];
+    [self addObserverForChildViewController:addingVC];
+}
+
+- (void)removeObserverForChildViewController:(UIViewController *)childViewController {
+    UIScrollView *scrollView = [self scrollViewWithSubViewController:childViewController];
+    if (scrollView) {
+        [self.KVOController unobserve:scrollView keyPath:@"tableHeaderView"];
+        [scrollView removeObserverForContentOffset];
+        scrollView.scrollObserver = nil;
+    }
+}
+
+- (void)removeChildViewControllerAndObserverAtIndex:(NSInteger)index {
+    UIViewController *removingVC = self.viewControllers[index];
+    UIView *placeHolderView = self.placeHolderViews[index];
+    [removingVC willMoveToParentViewController:nil];
+    [self removeObserverForChildViewController:removingVC];
+    [removingVC.view removeFromSuperview];
+    [placeHolderView removeAllEdgeConstaintsToView:removingVC.view];
+    [removingVC removeFromParentViewController];
+    [self.cachedviewControllers removeObject:removingVC];
+}
+
 - (void)removeChildViewControllersAndObservers {
-    for (UIViewController *vc in _viewControllers) {
-        [vc willMoveToParentViewController:nil];
-        UIScrollView *scrollView = [self scrollViewWithSubViewController:vc];
-        if (scrollView) {
-            [scrollView removeObserver:self forKeyPath:@"contentOffset"];
-            if ([scrollView isKindOfClass:[UITableView class]]) {
-                [scrollView removeObserver:self
-                                forKeyPath:@"tableHeaderView"];
-            }
+    [self.viewControllers enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        [self removeChildViewControllerAndObserverAtIndex:idx];
+    }];
+}
+
+- (void)relayoutCachedViewControllersWithSelectedIndex:(NSInteger)selectedIndex {
+    if (self.viewControllers.count <= kMaxNumberOfCacheViewController) {
+        return;
+    }
+    
+    NSInteger half = (kMaxNumberOfCacheViewController % 2) == 0 ? kMaxNumberOfCacheViewController / 2 : (kMaxNumberOfCacheViewController + 1) / 2;
+    
+    NSInteger lastLeftBoundIndex = MAX(0, _selectedIndex - half);
+    NSInteger lastRightBoundIndex = MIN(lastLeftBoundIndex + kMaxNumberOfCacheViewController - 1, self.viewControllers.count - 1);
+    NSInteger leftBoundIndex = MAX(0, selectedIndex - half);
+    NSInteger rightBoundIndex = MIN(leftBoundIndex + kMaxNumberOfCacheViewController - 1, self.viewControllers.count - 1);
+
+    if (leftBoundIndex == lastLeftBoundIndex && rightBoundIndex == lastRightBoundIndex) {
+        return;
+    }
+    
+    // 无交叉
+    if ((leftBoundIndex > lastRightBoundIndex) ||
+        (rightBoundIndex < lastLeftBoundIndex))
+    {
+        for (NSInteger i = lastLeftBoundIndex; i <= lastRightBoundIndex; ++i) {
+            [self removeChildViewControllerAndObserverAtIndex:i];
         }
-        [vc removeFromParentViewController];
+
+        for (NSInteger i = leftBoundIndex; i <= rightBoundIndex; ++i) {
+            [self addChildViewControllerAndObserverAtIndex:i];
+        }
+    }
+    // 交叉， selectedIndex > _selectedIndex
+    else if(leftBoundIndex <= lastRightBoundIndex &&
+            lastRightBoundIndex <= rightBoundIndex)
+    {
+        for (NSInteger i = lastLeftBoundIndex; i < leftBoundIndex; ++i) {
+            [self removeChildViewControllerAndObserverAtIndex:i];
+        }
+
+        for (NSInteger i = lastRightBoundIndex + 1; i <= rightBoundIndex; ++i) {
+            [self addChildViewControllerAndObserverAtIndex:i];
+        }
+    }
+    else {
+        for (NSInteger i = rightBoundIndex + 1; i <= lastRightBoundIndex; ++i) {
+            [self removeChildViewControllerAndObserverAtIndex:i];
+        }
+
+        for (NSInteger i = leftBoundIndex; i < lastLeftBoundIndex; ++i) {
+            [self addChildViewControllerAndObserverAtIndex:i];
+        }
     }
 }
 
@@ -186,7 +378,7 @@ static NSString * const kPanBounceKey = @"bounce";
     CGFloat headerOffset = _headerView ? _maxHeightOfHeaderView : 0.0;
     __block UIEdgeInsets contentInsets = UIEdgeInsetsZero;
     // Resize sub view controllers
-    [_viewControllers enumerateObjectsUsingBlock:^(UIViewController *viewController, NSUInteger idx, BOOL *stop) {
+    [_cachedviewControllers enumerateObjectsUsingBlock:^(UIViewController *viewController, NSUInteger idx, BOOL *stop) {
         CGRect newFrame = (CGRect){size.width * idx, 0.0, size};
         UIScrollView *scrollView = [self scrollViewWithSubViewController:viewController];
         if (scrollView) {
@@ -205,7 +397,7 @@ static NSString * const kPanBounceKey = @"bounce";
             
             // Set scroll view indicator insets
             [scrollView setScrollIndicatorInsets:scrollView.contentInset];
-
+            
             if (self.scrollToTop) {
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                     if ([self.class isEqualOrGreaterThanIOS7]) {
@@ -237,7 +429,7 @@ static NSString * const kPanBounceKey = @"bounce";
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     [self layoutViewControllers];
-
+    
     if (![self.class isEqualOrGreaterThanIOS8]) {
         //http://stackoverflow.com/questions/15490140/auto-layout-error
         [self.view layoutIfNeeded];
@@ -251,11 +443,15 @@ static NSString * const kPanBounceKey = @"bounce";
 
 - (void)setSelectedIndex:(NSInteger)selectedIndex animated:(BOOL)animated {
     if (_selectedIndex != selectedIndex) {
+        [self relayoutCachedViewControllersWithSelectedIndex:selectedIndex];
         [self layoutSubViewControllerToSelectedViewController];
         [_containerView setContentOffset:(CGPoint){selectedIndex * CGRectGetWidth(_containerView.bounds), _containerView.contentOffset.y}
                                 animated:animated];
         _selectedIndex = selectedIndex;
         [self.tabView setSelectedTabItemIndex:selectedIndex animated:animated];
+        if ([self respondsToSelector:@selector(scrollableHeaderTabViewController:didSelectTabAtIndex:)]) {
+            [self scrollableHeaderTabViewController:self didSelectTabAtIndex:selectedIndex];
+        }
     }
 }
 
@@ -263,6 +459,56 @@ static NSString * const kPanBounceKey = @"bounce";
     return [self scrollViewWithSubViewController:self.selectedViewController];
 }
 
+- (void)setHeaderViewTopContraintWithValue:(CGFloat)value {
+    CGFloat lastOffsetYOfHeaderView = self.headerViewTopContraint.constant;
+    self.headerViewTopContraint.constant = value;
+    UIScrollView *scrollView = [self scrollViewWithSubViewController:self.selectedViewController];
+    
+    if (scrollView) {
+        CGFloat offsetY = self.maxHeightOfHeaderView + value + CGRectGetHeight(_tabView.bounds);
+        [scrollView setContentOffset:CGPointMake(scrollView.contentOffset.x, -offsetY) animated:NO];
+        if ([self respondsToSelector:@selector(headerViewDidScrollWithOffsetY:scrollDirection:)]) {
+            if (lastOffsetYOfHeaderView > value) {
+                [self headerViewDidScrollWithOffsetY:lastOffsetYOfHeaderView - value
+                                     scrollDirection:CCScrollableHeaderScrollDirectionUp];
+            }
+            else {
+                [self headerViewDidScrollWithOffsetY:value - lastOffsetYOfHeaderView
+                                     scrollDirection:CCScrollableHeaderScrollDirectionDown];
+            }
+        }
+    } else {
+        //TODO:
+    }
+
+}
+
+- (CGFloat)estimateHeaderViewTopContraint {
+    UIViewController *selectedViewController = self.selectedViewController;
+    
+    // Get selected scroll view.
+    UIScrollView *scrollView = [self scrollViewWithSubViewController:selectedViewController];
+    
+    if (scrollView) {
+        // Set header view frame
+        CGFloat headerViewHeight = 0;
+        if (self.scrollToTop) {
+            headerViewHeight = _minHeightOfHeaderView;
+        }
+        else {
+            headerViewHeight = _maxHeightOfHeaderView - (scrollView.contentOffset.y + scrollView.contentInset.top);
+            headerViewHeight = MAX(headerViewHeight, _minHeightOfHeaderView);
+            headerViewHeight = MIN(headerViewHeight, _maxHeightOfHeaderView);
+        }
+        
+//        CGFloat top = headerViewHeight - self.headerView.bounds.size.height;
+//        NSLog(@"est top=%@ scroll offset=%@, contenInset=%@", @(top), NSStringFromCGPoint(scrollView.contentOffset), NSStringFromUIEdgeInsets(scrollView.contentInset));
+        return headerViewHeight - self.headerView.bounds.size.height;
+    }
+    else {
+        return _maxHeightOfHeaderView + _containerView.contentInset.top;
+    }
+}
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark - gesture
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
@@ -344,7 +590,7 @@ shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherG
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark - CCSimpleTabView
 - (void)simpleTabView:(CCSimpleTabView *)simpleTabView didSelectedTabItemAtIndex:(NSInteger)index {
-    [self setSelectedIndex:index animated:YES];
+    [self setSelectedIndex:index animated:NO];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -388,7 +634,22 @@ shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherG
                 [scrollView pop_removeAnimationForKey:kPanDecelerateKey];
             }
         }
-        [self layoutHeaderViewAndTabBar];
+        
+        CGPoint oldOffset = [change[NSKeyValueChangeOldKey] CGPointValue];
+        CGPoint newOffset = [change[NSKeyValueChangeNewKey] CGPointValue];
+//        NSLog(@"oo=%@, no=%@", NSStringFromCGPoint(oldOffset), NSStringFromCGPoint(newOffset));
+        
+        CCScrollableHeaderScrollDirection direction = CCScrollableHeaderScrollDirectionUnknown;
+        if (fabs(newOffset.y - oldOffset.y) < 1e-6) {
+            direction = CCScrollableHeaderScrollDirectionUnknown;
+        }
+        else if ((newOffset.y - oldOffset.y) > 0) {
+            direction = CCScrollableHeaderScrollDirectionUp;
+        }
+        else {
+            direction = CCScrollableHeaderScrollDirectionDown;
+        }
+        [self layoutHeaderViewAndTabBarWithScrollDirection:direction];
     }
     else if ([keyPath isEqualToString:@"tableHeaderView"]) {
         UIScrollView *scrollView = [self scrollViewWithSubViewController:selectedViewController];
@@ -403,33 +664,22 @@ shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherG
     }
 }
 
-- (void)layoutHeaderViewAndTabBar
+- (void)layoutHeaderViewAndTabBarWithScrollDirection:(CCScrollableHeaderScrollDirection)scrollDirection
 {
     UIViewController *selectedViewController = self.selectedViewController;
-    
     // Get selected scroll view.
     UIScrollView *scrollView = [self scrollViewWithSubViewController:selectedViewController];
-    
     if (scrollView) {
-        // Set header view frame
-        CGFloat headerViewHeight = 0;
-        if (self.scrollToTop) {
-            headerViewHeight = _minHeightOfHeaderView;
-        }
-        else {
-            headerViewHeight = _maxHeightOfHeaderView - (scrollView.contentOffset.y + scrollView.contentInset.top);
-            headerViewHeight = MAX(headerViewHeight, _minHeightOfHeaderView);
-            headerViewHeight = MIN(headerViewHeight, _maxHeightOfHeaderView);
-        }
-        
-        self.headerViewTopContraint.constant = headerViewHeight - self.headerView.bounds.size.height;
-      
-        if ([self respondsToSelector:@selector(headerViewDidScrollWithOffsetY:)]) {
-            [self headerViewDidScrollWithOffsetY:(headerViewHeight - _minHeightOfHeaderView)];
+        CGFloat top = [self estimateHeaderViewTopContraint];
+        self.headerViewTopContraint.constant = top;
+        CGFloat headerViewHeight = top + self.headerView.bounds.size.height;
+        if ([self respondsToSelector:@selector(headerViewDidScrollWithOffsetY:scrollDirection:)]) {
+            [self headerViewDidScrollWithOffsetY:(headerViewHeight - _minHeightOfHeaderView)
+                                 scrollDirection:scrollDirection];
         }
     } else {
         // Set header view frame
-        self.headerViewTopContraint.constant = _maxHeightOfHeaderView + _containerView.contentInset.top;
+        self.headerViewTopContraint.constant = [self estimateHeaderViewTopContraint];
     }
 }
 
@@ -441,6 +691,9 @@ shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherG
     [self layoutSubViewControllerToSelectedViewController];
 }
 
+/**
+ *  切换tab，重新基于header的位置，layout sub vc
+ */
 - (void)layoutSubViewControllerToSelectedViewController
 {
     UIViewController *selectedViewController = [self selectedViewController];
@@ -456,7 +709,7 @@ shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherG
     };
     
     // Adjustment offset or frame for sub views.
-    [_viewControllers enumerateObjectsUsingBlock:^(UIViewController *viewController, NSUInteger idx, BOOL *stop) {
+    [_cachedviewControllers enumerateObjectsUsingBlock:^(UIViewController *viewController, NSUInteger idx, BOOL *stop) {
         if (selectedViewController == viewController) {
             return;
         }
@@ -501,6 +754,13 @@ shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherG
         NSInteger newSelectedIndex = round(scrollView.contentOffset.x / scrollView.contentSize.width * numberOfViewControllers);
         newSelectedIndex = MIN(numberOfViewControllers - 1, MAX(0, newSelectedIndex));
         self.tabView.selectedTabItemIndex = newSelectedIndex;
+        if (_selectedIndex != newSelectedIndex && [self respondsToSelector:@selector(scrollableHeaderTabViewController:didSelectTabAtIndex:)]) {
+            [self scrollableHeaderTabViewController:self didSelectTabAtIndex:newSelectedIndex];
+        }
+        
+        if (_selectedIndex != newSelectedIndex) {
+            [self relayoutCachedViewControllersWithSelectedIndex:newSelectedIndex];
+        }
         _selectedIndex = newSelectedIndex;
     }
 }
